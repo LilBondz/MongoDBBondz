@@ -2,6 +2,9 @@
 using System;
 // importerer Generic fra system for å lage lister
 using System.Collections.Generic;
+using MongoDB.Bson;
+// importerer mongoDB driver
+using MongoDB.Driver;
 
 // Namespace er bjarnekunderegister
 namespace Bjarnekunderegister
@@ -17,7 +20,6 @@ namespace Bjarnekunderegister
         static void Main(string[] args)
         {
             // Lager en variebel som bestemmer om while loopen skal kjøre eller stoppe ut fra valgene i Hovedmeny
-            var settings = MongoClientSettings.FromConnectionString("mongodb+srv://bondz:123QWEr@cluster0.uterx.mongodb.net/myFirstDatabase?retryWrites=true&w=majority");
             bool running = true;
             while (running)
             {
@@ -25,24 +27,26 @@ namespace Bjarnekunderegister
                 string awnser = Hovedmeny();
 
                 // Sjekker om svar er 0
-                if(awnser == "0")
+                if (awnser == "0")
                 {
                     // skifter running variablen til false så loopen stopper og programmet stopper
                     running = false;
 
-                // sjekker om svaret er 1
-                } else if(awnser == "1")
+                    // sjekker om svaret er 1
+                }
+                else if (awnser == "1")
                 {
                     // Kjører en funksjon som printer ut en liste av alle kundene 
                     ListKunder();
 
-                // Sjekker om svaret er 2
-                } else if(awnser == "2")
+                    // Sjekker om svaret er 2
+                }
+                else if (awnser == "2")
                 {
                     // Kjører en funskjon som åpner en administrasjonsmeny
                     Administrer();
 
-                // Hvis det blir skrevet noe annet enn 0,1 og 2 kjører loopen videre og spør på nytt om svar fra hovedmeny
+                    // Hvis det blir skrevet noe annet enn 0,1 og 2 kjører loopen videre og spør på nytt om svar fra hovedmeny
                 }
                 else
                 {
@@ -77,20 +81,23 @@ namespace Bjarnekunderegister
             string awnser = Adminmeny();
 
             // hvis svar er 0 så kjører den return, siden funksjonen er en void skal den ikke returnere noe men den stopper funskjonen og går tilbake til Hovedmenyen.
-            if(awnser == "0")
+            if (awnser == "0")
             {
                 return;
 
-            // Hvis svar er 1 kjører den funksjonen Registrerkunde
-            } else if(awnser == "1")
+                // Hvis svar er 1 kjører den funksjonen Registrerkunde
+            }
+            else if (awnser == "1")
             {
                 RegistrerKunde();
-            // Hvis svar er 2 kjører den funksjonen SlettKunde
-            } else if(awnser == "2")
+                // Hvis svar er 2 kjører den funksjonen SlettKunde
+            }
+            else if (awnser == "2")
             {
                 SlettKunde();
-            // hvis svaret som er gitt ikke er 0,1 eller 2 så returnerer den og går går tilbake til hovedmeny
-            } else
+                // hvis svaret som er gitt ikke er 0,1 eller 2 så returnerer den og går går tilbake til hovedmeny
+            }
+            else
             {
                 return;
             }
@@ -99,6 +106,10 @@ namespace Bjarnekunderegister
         // Lager funksjon SlettKunde();
         static void SlettKunde()
         {
+            var client = Get_Database();
+            var db = client.GetDatabase("db_bondz_ansatt");
+            var col = db.GetCollection<BsonDocument>("kunderegister");
+            var ansatt = col.Find(new BsonDocument()).ToList();
             // Sletter all text i konsollen
             Console.Clear();
             // spør om kundenummer
@@ -106,15 +117,16 @@ namespace Bjarnekunderegister
             // Henter et svar
             string awnser = Console.ReadLine();
             // for hver Liste med kundeinfo i Kunderegister listen
-            foreach(List<string> kunde in Kunderegister)
+            foreach (BsonDocument kunde in ansatt)
             {
                 // hvis kunden har samme kundenummer som svaret brukeren ga sletter den kunden fra kunderegister og stopper for loopen
                 if (kunde[0] == awnser)
                 {
-                    Kunderegister.Remove(kunde);
+                    ansatt.Remove(kunde);
                     return;
-                // Hvis den ikke finner en match går den bare videre og printer At den ikke kunne finne kunden
-                } else
+                    // Hvis den ikke finner en match går den bare videre og printer At den ikke kunne finne kunden
+                }
+                else
                 {
                     continue;
                 }
@@ -126,45 +138,59 @@ namespace Bjarnekunderegister
         // lager Registrer kunde funksjon
         static void RegistrerKunde()
         {
+            var client = Get_Database();
+            var db = client.GetDatabase("db_bondz_ansatt");
+            var col = db.GetCollection<BsonDocument>("kunderegister");
             // lager en liste med info for kunde
-            List<string> kunde = new List<string>();
+            Dictionary<string, string> kunde = new Dictionary<string, string>();
             // Spørr om Fornavn, Etternavn, Adresse, Postnummer, Poststed, Telefonnummer
             Console.Clear();
             kundenummer++;
-            kunde.Add((kundenummer).ToString());
+            string kundenr = kundenummer.ToString();
             Console.Clear();
             Console.WriteLine("Fornavn: ");
-            kunde.Add(Console.ReadLine());
+            string fornavn = Console.ReadLine();
             Console.Clear();
             Console.WriteLine("Etternavn: ");
-            kunde.Add(Console.ReadLine()); ;
+            string etternavn = Console.ReadLine(); ;
             Console.Clear();
             Console.WriteLine("Adresse: ");
-            kunde.Add(Console.ReadLine());
+            string adresse = Console.ReadLine();
             Console.Clear();
             Console.WriteLine("Postnummer: ");
-            kunde.Add(Console.ReadLine());
+            string postnr = Console.ReadLine();
             Console.Clear();
             Console.WriteLine("Poststed: ");
-            kunde.Add(Console.ReadLine());
+            string poststed = Console.ReadLine();
             Console.Clear();
             Console.WriteLine("Telefonnummer: ");
-            kunde.Add(Console.ReadLine());
+            string tlf = Console.ReadLine();
             Console.Clear();
             // sjekker om kundenavn har innhold og hvis den ikke har det spør den om kundeinfoen igjen og returerer for å avslutte funksjonen så den ikke fortsetter etterpå igjen
-            if(kunde[1] == null)
+            if (fornavn == null)
             {
                 RegistrerKunde();
                 return;
 
-            // hvis den har innhold så kjører den videre
-            } else
+                // hvis den har innhold så kjører den videre
+            }
+            else
             {
-                
+                var document = new BsonDocument
+                {
+                    { "kundenr", kundenr },
+                    { "fornavn", fornavn },
+                    { "etternavn", etternavn },
+                    { "adresse", adresse },
+                    { "postnummer", postnr },
+                    { "poststed", poststed },
+                    { "telefonnummer", tlf }
+
+                };
+                col.InsertOne(document);
             }
             // legger til kunde listen i Kunderegisteret og printer at kunde med kundenummer er registrert og venter til brukeren trykker neter til den går videre
-            Kunderegister.Add(kunde);
-            Console.WriteLine($"Kunde med kundenummer: {kunde[0]} er registrert.\nTrykk Enter...");
+            Console.WriteLine($"Kunde er registrert.\nTrykk Enter...");
             Console.ReadLine();
         }
 
@@ -188,16 +214,28 @@ namespace Bjarnekunderegister
         // Lager funksjon for listing av kunder
         static void ListKunder()
         {
+            var client = Get_Database();
+            var db = client.GetDatabase("db_bondz_ansatt");
+            var col = db.GetCollection<BsonDocument>("kunderegister");
+            var ansatte = col.Find(new BsonDocument()).ToList();
             // sletter text i konsoll
             Console.Clear();
             // for hver liste"kunde" i kunderegister så printer den all infoen om den kunden
-            foreach(List<string> kunde in Kunderegister)
+            foreach (BsonDocument doc in ansatte)
             {
-                Console.WriteLine($"Kundenummer: {kunde[0]}, Fornavn: {kunde[1]}, Etternavn: {kunde[2]}, Adresse: {kunde[3]}, Postnummer: {kunde[4]}, Poststed: {kunde[5]}, Telefonnummer: {kunde[6]}.");
+                Console.WriteLine(doc.ToString());
             }
             // venter på at brukeren skal trykke enter før programmet går videre.
             Console.WriteLine("\nTrykk Enter...");
             Console.ReadLine();
+        }
+
+        static MongoClient Get_Database()
+        {
+            var settings = MongoClientSettings.FromConnectionString("mongodb+srv://bondz:123QWEr@cluster0.uterx.mongodb.net/myFirstDatabase?retryWrites=true&w=majority");
+            var client = new MongoClient(settings);
+
+            return client;
         }
     }
 }
